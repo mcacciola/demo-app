@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-core{{feature}}
+  labels:
+    app: inventory-core
+spec:
+  type: LoadBalancer
+  loadBalancerSourceRanges:
+    - 151.140.0.0/16
+    - 165.130.0.0/16
+    - 207.11.0.0/17
+    - 50.207.27.182/32
+    - 98.6.11.8/29
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: inventory-core
+    branch: branch{{feature}}
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: inventory-core{{feature}}
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+          app: inventory-core
+          branch: branch{{feature}}
+    spec:
+      volumes:
+        - name: inventory-core-credentials
+          secret:
+            secretName: inventory-core-credentials
+        - name: ssl-certs
+          hostPath:
+            path: /etc/ssl/certs
+      containers:
+        - name: endpoints
+          image: gcr.io/endpoints-release/endpoints-runtime:1
+          args: [
+              "--http_port=8081",
+              "--backend=127.0.0.1:8080",
+              "--service=inventory-core.endpoints.np-sc1-distributionservices.cloud.goog",
+              "--version=2018-01-24r32",
+              "-k=/secrets/inventory-core/credentials.json"]
+          volumeMounts:
+            - name: inventory-core-credentials
+              mountPath: /secrets/inventory-core
+              readOnly: true
+          ports:
+            - containerPort: 8081
+
+        - name: inventory-core
+          image: {{image_name}}
+          ports:
+            - containerPort: 8080
+          env:
+            - name: GCP_PROJECT_ID
+              value: {{project}}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /Users/thduser/Downloads/My First Project-b9e737c49f34.json
+            - name: SPRING_PROFILES_ACTIVE
+              value: cloud-spanner,pubsub
+          volumeMounts:
+            - name: inventory-core-credentials
+              mountPath: /secrets/inventory-core
+              readOnly: true

@@ -1,0 +1,50 @@
+# Defaults
+
+spring:
+  application:
+    name: demo
+  profiles:
+    active: cloud-spanner
+  jackson:
+    date-format: "YYYY-MM-dd"
+    serialization:
+      write-dates-as-timestamps: false
+  zipkin:
+    baseUrl: http://zipkin2stackdriver:9411/
+  sleuth:
+    sampler:
+      percentage: 1
+google:
+  cloud:
+    projectId: ${GCP_PROJECT_ID:seraphic-shell-195714}
+
+---
+# Cloud Spanner Persistence Layer
+spring:
+  profiles: cloud-spanner
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+google:
+  cloud:
+    spanner:
+      project-id: 'seraphic-shell-195714'
+      instance: 'dock-doors'
+      database: 'dockerdoors'
+      test-connection-query: SELECT 1
+
+---
+
+# Cloud Pubsub
+spring.profiles: pubsub
+google:
+  cloud:
+    pubsub:
+      capacity: 10000
+      inventory-core:
+        name:  'inventory-core'
+      asn-core:
+        name:  'asn-core'
+      inventory-asn-core-sub: 'inventory-asn-core-subscription'
+---
